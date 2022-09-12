@@ -1,52 +1,32 @@
-name: Setup Flux CLI
-description: A GitHub Action for running Flux commands
-author: Stefan Prodan
-branding:
-  color: blue
-  icon: command
-inputs:
-  version:
-    description: "Flux version e.g. 0.8.0 (defaults to latest stable release)"
-    required: false
-  arch:
-    description: "arch can be amd64, arm64 or arm"
-    required: true
-    default: "amd64"
-  bindir:
-    description: "Optional location of the Flux binary. Will not use sudo if set. Updates System Path."
-    required: false
-runs:
-  using: composite
-  steps:
-    - name: "Download flux binary to tmp"
-      shell: bash
-      run: |
-        ARCH=${{ inputs.arch }}
-        VERSION=${{ inputs.version }}
+name: update-flux
 
-        if [ -z $VERSION ]; then
-          VERSION=$(curl https://api.github.com/repos/fluxcd/flux2/releases/latest -sL | grep tag_name | sed -E 's/.*"([^"]+)".*/\1/' | cut -c 2-)
-        fi
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 * * * *"
 
-        BIN_URL="https://github.com/fluxcd/flux2/releases/download/v${VERSION}/flux_${VERSION}_linux_${ARCH}.tar.gz"
-        curl -sL ${BIN_URL} -o /tmp/flux.tar.gz
-        mkdir -p /tmp/flux
-        tar -C /tmp/flux/ -zxvf /tmp/flux.tar.gz
-    - name: "Copy Flux binary to execute location"
-      shell: bash
-      run: |
-        BINDIR=${{ inputs.bindir }}
-        if [ -z $BINDIR ]; then
-          sudo cp /tmp/flux/flux /usr/local/bin
-        else
-          cp /tmp/flux/flux "${BINDIR}"
-          echo "${BINDIR}" >> $GITHUB_PATH
-        fi
-    - name: "Cleanup tmp"
-      shell: bash
-      run: |
-        rm -rf /tmp/flux/ /tmp/flux.tar.gz
-    - name: "Verify correct installation of binary"
-      shell: bash
-      run: |
-        flux -v
+jobs:
+  components:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v2
+      - name: Setup Flux CLI
+        uses: fluxcd/flux2/action@main
+      - name: Check for updates
+        id: update
+        run: |
+          flux install \
+            --export > ./clusters/production/flux-system/gotk-components.yaml
+
+          VERSION="$(flux -v)"
+          echo "::set-output name=flux_version::$VERSION"
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v3
+        with:
+            token: ${{ secrets.GITHUB_TOKEN }}
+            branch: update-flux
+            commit-message: Update to ${{ steps.update.outputs.flux_version }}
+            title: Update to ${{ steps.update.outputs.flux_version }}
+            body: |
+              ${{ steps.update.outputs.flux_version }}
