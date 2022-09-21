@@ -47,4 +47,11 @@ patches:
         value: --helm-cache-purge-interval=5m      
     target:
       kind: Deployment
+      name: source-controller
+  - patch: |
+      - op: add
+        path: /spec/template/metadata/labels/aadpodidbinding
+        value: bap-aks-test-02
+    target:
+      kind: Deployment
       name: source-controller    
