@@ -30,7 +30,7 @@ patches:
               - name: manager
                 resources:
                   limits:
-                    cpu: 2500m
+                    cpu: 3000m
                     memory: 4Gi      
     target:
       kind: Deployment
