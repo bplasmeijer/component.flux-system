@@ -1,0 +1,37 @@
+name: e2e
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ 'main', 'release/**' ]
+  pull_request:
+    branches: [ 'main', 'release/**' ]
+    paths-ignore: [ 'docs/**', 'rfcs/**' ]
+
+permissions:
+  contents: read
+
+jobs:
+  e2e-amd64-kubernetes:
+    runs-on: ubuntu-latest
+    services:
+      registry:
+        image: registry:2
+        ports:
+          - 5000:5000
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3df4ab11eba7bda6032a0b82a6bb43b11571feac # v4.0.0
+      - name: Setup Kubernetes
+        uses: helm/kind-action@dda0770415bac9fc20092cacbc54aa298604d140 # v1.8.0
+        with:
+          version: v0.20.0
+          cluster_name: kind
+          config: .github/kind/config.yaml # disable KIND-net
+          # The versions below should target the newest Kubernetes version
+          # Keep this up-to-date with https://endoflife.date/kubernetes
+          node_image: kindest/node:v1.25.11
+          kubectl_version: v1.25.11
+      - name: flux create kustomization
+        run: |
+          kubectl version
