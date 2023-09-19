@@ -34,4 +34,4 @@ jobs:
           kubectl_version: v1.25.11
       - name: flux create kustomization
         run: |
-          kubectl version
+          kubectl kustomize ./flux-system | kubectl apply -f-
