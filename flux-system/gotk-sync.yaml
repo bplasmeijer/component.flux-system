@@ -6,12 +6,12 @@ metadata:
   name: flux-system
   namespace: flux-system
 spec:
-  interval: 1m0s
+  interval: 12h
   ref:
     branch: main
   secretRef:
     name: flux-system
-  url: ssh://git@github.com/bplasmeijer/fleet-next-flux-system
+  url: ssh://git@github.com/bplasmeijer/components.flux-system
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
 kind: Kustomization
@@ -19,7 +19,7 @@ metadata:
   name: flux-system
   namespace: flux-system
 spec:
-  interval: 10m0s
+  interval: 60m
   path: ./
   prune: true
   sourceRef:
