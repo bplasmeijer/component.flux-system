@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   e2e-amd64-kubernetes:
+    
     runs-on: ubuntu-latest
     services:
       registry:
@@ -22,25 +23,22 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4.0.0
-      - name: Setup Kubernetes
-        uses: helm/kind-action@v1.8.0
-        with:
-          version: v0.20.0
-          cluster_name: kind
-          config: .github/kind/config.yaml # disable KIND-net
-          # The versions below should target the newest Kubernetes version
-          # Keep this up-to-date with https://endoflife.date/kubernetes
-          node_image: kindest/node:v1.25.11
-          kubectl_version: v1.25.11
-      - name: Set outputs
-        id: vars
+      
+      - name: install flux cli
         run: |
-          REPOSITORY_NAME=${{ github.event.repository.name }}
-          BRANCH_NAME=${GITHUB_REF##*/}
-          COMMIT_SHA=$(git rev-parse HEAD)
-          PSEUDO_RAND_SUFFIX=$(echo "${BRANCH_NAME}-${COMMIT_SHA}" | shasum | awk '{print $1}')
-          TEST_REPO_NAME="${REPOSITORY_NAME}-${PSEUDO_RAND_SUFFIX}"
-          echo "test_repo_name=$TEST_REPO_NAME" >> $GITHUB_OUTPUT
-      - name: install flux manifests
+          curl -s https://fluxcd.io/install.sh | sudo FLUX_VERSION=0.37.0 bash
+      
+      # make kind test cluster
+      - name: create-kind
         run: |
-          flux install flux install --manifests flux-system/
+
+          ./scripts/kind.sh -t 1.25.11
+
+      - name: install flux manifests & check
+        run: |
+          flux install --manifests flux-system/
+          flux check
+
+      - name: delete-kind
+        run: |
+          ./scripts/cleanup.sh 
