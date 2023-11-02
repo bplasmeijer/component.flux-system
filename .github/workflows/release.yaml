@@ -39,3 +39,19 @@ jobs:
           fi
           echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
           echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+      - name: Create Release
+            id: create_release
+            uses: actions/create-release@v1
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            with:
+              tag_name: ${{ github.ref }}
+              release_name: Release ${{ github.ref }}
+              body: |
+                Changes in this Release
+                - First Change
+                - Second Change
+              draft: true
+              prerelease: true
+
+  
