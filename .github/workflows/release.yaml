@@ -1,0 +1,41 @@
+name: release
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'image tag prefix'
+        default: 'rc'
+        required: true
+
+permissions:
+  contents: read
+
+env:
+  COMPONENT: ${{ github.event.repository.name }}
+
+jobs:
+  release:
+    outputs:
+      hashes: ${{ steps.slsa.outputs.hashes }}
+      image_url: ${{ steps.slsa.outputs.image_url }}
+      image_digest: ${{ steps.slsa.outputs.image_digest }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # for creating the GitHub release.
+      id-token: write # for creating OIDC tokens for signing.
+      packages: write # for pushing and signing container images.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+      - name: Prepare
+        id: prep
+        run: |
+          VERSION="${{ github.event.inputs.tag }}-${GITHUB_SHA::8}"
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF/refs\/tags\//}
+          fi
+          echo "BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_OUTPUT
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
